@@ -21,3 +21,9 @@
       - kubelet=1.13.5-00 
       - kubeadm=1.13.5-00 
       - kubectl=1.13.5-00
+
+- name: Enable iptables bridge call
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: '1'
+    state: present
