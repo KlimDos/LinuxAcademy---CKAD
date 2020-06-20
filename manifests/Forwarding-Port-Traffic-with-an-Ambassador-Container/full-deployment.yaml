@@ -1,0 +1,57 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fruit-service-ns
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fruit-service-ambassador-config
+  namespace: fruit-service-ns
+data:
+  haproxy.cfg: |
+    global
+        daemon
+        maxconn 256
+
+    defaults
+        mode http
+        timeout connect 5000ms
+        timeout client 50000ms
+        timeout server 50000ms
+
+    listen http-in
+        bind *:80
+        server server1 127.0.0.1:8775 maxconn 32
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fruit-service-deployment
+  namespace: fruit-service-ns
+spec:
+  selector:
+    matchLabels:
+      app: fruit-service
+  template:
+    metadata:
+      labels:
+        app: fruit-service
+    spec:
+      volumes:
+        - name: fruit-service-ambassador-config-volume
+          configMap:
+            name: fruit-service-ambassador-config
+      containers:
+      - name: fruit-service-app
+        image: linuxacademycontent/legacy-fruit-service:1
+        ports:
+        - containerPort: 8775
+      - name: fruit-service-ambassador
+        image: haproxy:1.7
+        volumeMounts:
+          - name: fruit-service-ambassador-config-volume
+            mountPath: /usr/local/etc/haproxy
+        ports:
+          - containerPort: 80
